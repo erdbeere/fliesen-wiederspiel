@@ -4,6 +4,10 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import {DBConfig} from "./DBConfig";
 import {initDB, useIndexedDB} from "react-indexed-db-hook";
+import FliesenCanvas from "./FliesenCanvas";
+import Slider from "./Slider.tsx";
+import useFliesentischAt from "./FliesenLoader.tsx";
+import {EVENTS_PER_FILE, fliesentischSizeMapping, MAX_EVENT_ID, MIN_EVENT_ID} from "./constants.ts";
 
 initDB(DBConfig);
 
@@ -13,20 +17,49 @@ type TileEvent = {
     y: number,
     color: string,
     created: string,
-    missing: boolean,
 }
 
-// Needs to be same value as in scripts/build-tile-assets.ts
-const EVENTS_PER_FILE = 10000;
-
-async function fetchTileEvent(id: number): Promise<TileEvent[]> {
-    if (id < 1 || id > 2132410) {
+function getTileEventFileUrl(id: number): string {
+    if (id < MIN_EVENT_ID || id > MAX_EVENT_ID) {
         // more than 2132410 events do not exist
         console.error(`Invalid event ID ${id} requested.`)
-        return [];
+        return "";
     }
     const file_id = Math.floor(id / EVENTS_PER_FILE);
-    const file_url = `/src/assets/tile_events/${file_id}.csv`;
+    return `/src/assets/tile_events/${file_id}.csv`;
+}
+
+async function fetchAndSaveAllTileEvents(start_id: number) {
+    // const {add} = useIndexedDB('tile_events');
+    const file_urls = [];
+    const start_file_id = Math.floor(start_id / EVENTS_PER_FILE);
+    const last_file_id = Math.floor(MAX_EVENT_ID / EVENTS_PER_FILE);
+    for (let file_id = start_file_id; file_id <= last_file_id; file_id++) {
+        file_urls.push(`/src/assets/tile_events/${file_id}.csv`);
+    }
+    // for (const file_url of file_urls) {
+    //     const tile_events = await fetchTileEvents(file_url);
+    //     for (const tile_event of tile_events) {
+    //         add(tile_event).then(
+    //             event => {
+    //                 console.log(event);
+    //             },
+    //             error => {
+    //                 console.log(error);
+    //             }
+    //         );
+    //     }
+    // }
+}
+
+async function fetchTileEvents(file_url: string): Promise<TileEvent[]> {
+    // if (id < MIN_EVENT_ID || id > MAX_EVENT_ID) {
+    //     // more than 2132410 events do not exist
+    //     console.error(`Invalid event ID ${id} requested.`)
+    //     return [];
+    // }
+    // const file_id = Math.floor(id / EVENTS_PER_FILE);
+    // const file_url = `/src/assets/tile_events/${file_id}.csv`;
     const tile_events: TileEvent[] = []
     await fetch(file_url).then(response => response.text()).then(text => {
         const lines = text.split('\n');
@@ -38,7 +71,6 @@ async function fetchTileEvent(id: number): Promise<TileEvent[]> {
                 "y": parseInt(parts[2]),
                 "color": parts[3],
                 "created": parts[4],
-                "missing": false,
             };
             tile_events.push(tile_event);
         }
@@ -46,71 +78,129 @@ async function fetchTileEvent(id: number): Promise<TileEvent[]> {
     return tile_events;
 }
 
-function useFliesentischAt(eventID: number): string[] {
-    const {getByID, add} = useIndexedDB('tile_events');
-    const [fliesentisch, setFliesentisch] = useState("foo");
 
-    useEffect(() => {
-        getByID(eventID).then(tile_event => {
-            if (tile_event === undefined) {
-                fetchTileEvent(eventID).then(tile_events => {
-                    for (const tile_event of tile_events) {
-                        add(tile_event).then(
-                            event => {
-                                // console.log(event);
-                            },
-                            error => {
-                                console.log(error);
-                            }
-                        );
-                    }
-                })
-            } else if (tile_event.missing) {
+function getLatestEventID(callback: (maxRevisionObject: number) => void) {
+    const openReq = indexedDB.open("TileEvents");
+    openReq.onsuccess = function () {
+        const db = openReq.result;
+        const transaction = db.transaction("tile_events", 'readonly');
+        const objectStore = transaction.objectStore("tile_events");
+        const index = objectStore.index('id');
+        const openCursorRequest = index.openCursor(null, 'prev');
+        let lastTileEvent: TileEvent | null = null;
+
+        openCursorRequest.onsuccess = function (event) {
+            if (!event.target) {
                 return;
             }
-            setFliesentisch(JSON.stringify(tile_event));
-        });
-    }, [eventID]);
-    return fliesentisch;
+            if (event.target.result) {
+                lastTileEvent = event.target.result.value; //the object with max revision
+            }
+        };
+        transaction.oncomplete = function (event) {
+            db.close();
+            if (callback) {
+                callback(lastTileEvent?.id || 0);
+            }
+        };
+    }
 }
 
 function App() {
-    const [currentEventID, setCurrentEventID] = useState(0);
-    const fliesentisch = useFliesentischAt(currentEventID);
+    const [currentEventID, setCurrentEventID] = useState(1);
+    const {add} = useIndexedDB('tile_events');
+    const [alreadyDownloadedURLs, setAlreadyDownloadedURLs] = useState<string[]>([]);
+    const [downloadedUntilEventID, setDownloadedUntilEventID] = useState(-1);
+    const [playing, setPlaying] = useState(false);
+
+    const displayedEventID = currentEventID;
+    // if (displayedEventID > downloadedUntilEventID) {
+    //     displayedEventID = downloadedUntilEventID;
+    // }
+    const fliesentisch = useFliesentischAt(displayedEventID);
+
+    useEffect(() => {
+        getLatestEventID((latestEventID) => {
+            setDownloadedUntilEventID(latestEventID);
+        });
+    }, []);
+
+    useEffect(() => {
+        return;
+        if (downloadedUntilEventID >= 0 && downloadedUntilEventID < MAX_EVENT_ID) {
+            const fileURL = getTileEventFileUrl(downloadedUntilEventID + 1);
+            if (alreadyDownloadedURLs.includes(fileURL)) {
+                return
+            }
+            setAlreadyDownloadedURLs([...alreadyDownloadedURLs, fileURL]);
+            fetchTileEvents(fileURL).then(tile_events => {
+                for (const tile_event of tile_events) {
+                    add(tile_event).then(
+                        event => {
+                            if (tile_event.id > downloadedUntilEventID) {
+                                setDownloadedUntilEventID(tile_event.id);
+                            }
+                        },
+                        // error => {
+                        // }
+                    );
+                }
+            });
+        }
+    }, [downloadedUntilEventID]);
 
 
-    // const [tile_events, setTileEvents] = useState("")
+    // openCursor(event => {
+    //     if (!event.target) {
+    //         return;
+    //     }
+    //     const cursor = event.target.result;
+    //     if (!cursor) {
+    //         return;
+    //     }
+    //     const tile_event = cursor.value;
+    //     if (!tile_event) {
+    //         return;
+    //     }
+    //     setDownloadedUntilEventID(tile_event.id);
+    // })
 
-    // fetch('/src/assets/tile_events/1.csv').then(response => response.text()).then(text => {
-    //     setTileEvents(text);
-    //     // setTileEvents(text.split('\n').map(line => line.split(',')))
-    // });
+    useEffect(() => {
+        fetchAndSaveAllTileEvents(MIN_EVENT_ID);
+        const interval = setInterval(() => {
+            // setCurrentEventID(currentEventID + 1);
+        }, 10);
+        return () => clearInterval(interval);
+    }, [currentEventID]);
+
+    let message = <span></span>;
+    if (currentEventID !== displayedEventID) {
+        message = <strong>Fliesentisch wird runtergeladen…</strong>
+    }
 
     return (
         <>
-            <div>
-                <a href="https://vitejs.dev" target="_blank">
-                    <img src={viteLogo} className="logo" alt="Vite logo"/>
-                </a>
-                <a href="https://react.dev" target="_blank">
-                    <img src={reactLogo} className="logo react" alt="React logo"/>
-                </a>
-            </div>
-            <h1>Vite + React</h1>
             <div className="card">
-                <button onClick={() => setCurrentEventID(currentEventID+1)}>
+                <button onClick={() => setCurrentEventID(currentEventID - 1000)}>
+                    Prev
+                </button>
+                <input type="number" value={currentEventID}
+                       onChange={event => setCurrentEventID(parseInt(event.target.value))}/>
+                <button onClick={() => setCurrentEventID(currentEventID + 1000)}>
                     Next
                 </button>
                 <p>
-                    Current event: {currentEventID}
+                    Current event: {currentEventID}<br/>
+                    Downloaded until event ID: {downloadedUntilEventID}
                 </p>
-                <p>
-                    {fliesentisch}
-                </p>
+                <FliesenCanvas fliesentisch={fliesentisch}/>
+                <Slider min={MIN_EVENT_ID} max={MAX_EVENT_ID} value={currentEventID} buffer={downloadedUntilEventID}
+                        markers={fliesentischSizeMapping.map(fliesentischSize => fliesentischSize.minEventId)}
+                        playing={playing}
+                        setPlaying={setPlaying}
+                        setValue={setCurrentEventID}/>
+                {message}
             </div>
-            <p className="read-the-docs">
-                Click on the Vite and React logos to learn more
-            </p>
         </>
     )
 }

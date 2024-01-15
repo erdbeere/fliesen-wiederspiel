@@ -1,0 +1,29 @@
+#slider {
+    display: flex;
+    width: 100%;
+}
+
+#slider #seekbar {
+    flex-grow: 1;
+    margin: 0 1em;
+}
+
+#slider #controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 0.2em;
+    gap: 0.2em;
+}
+
+#slider svg.player-button {
+    fill: #ee4d2e;
+    width: 1.5em;
+    height: 1.5em;
+    cursor: pointer;
+    transition: fill 0.25s;
+}
+
+#slider svg.player-button:hover {
+    fill: #f5f7f6;
+}
