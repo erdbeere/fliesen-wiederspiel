@@ -1,4 +1,5 @@
 import './Slider.css'
+import {ReactNode} from "react";
 
 function NextButton({onClick}: { onClick?: () => void }) {
     return <svg className="player-button" version="1.1"
@@ -77,12 +78,12 @@ function ControlBar({playing, value, markers, setPlaying, setValue}: {
 }
 
 
-function Slider({min, max, value, buffer, markers, playing, setPlaying, setValue}: {
+function Slider({min, max, value, markers, label, playing, setPlaying, setValue}: {
     min: number,
     max: number,
     value: number,
-    buffer: number,
     markers: number[],
+    label: ReactNode,
     playing: boolean,
     setPlaying: (playing: boolean) => void,
     setValue: (value: number) => void
@@ -91,6 +92,7 @@ function Slider({min, max, value, buffer, markers, playing, setPlaying, setValue
         <ControlBar playing={playing} value={value} setPlaying={setPlaying} setValue={setValue} markers={markers}/>
         <input id="seekbar" type="range" min={min} max={max} value={value} list="markers"
                onChange={event => setValue(parseInt(event.target.value))}/>
+        <div className="label">{label}</div>
         <datalist id="markers">
             {markers.map(marker => <option value={marker} key={marker}></option>)}
         </datalist>

@@ -8,6 +8,10 @@
     margin: 0 1em;
 }
 
+#slider .label {
+    width: 5em;
+}
+
 #slider #controls {
     display: flex;
     justify-content: center;
