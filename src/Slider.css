@@ -24,7 +24,7 @@
     gap: 0.2em;
 }
 
-#slider svg.player-button {
+svg.player-button {
     fill: #ee4d2e;
     width: 1.5em;
     height: 1.5em;
@@ -32,6 +32,6 @@
     transition: fill 0.25s;
 }
 
-#slider svg.player-button:hover {
+svg.player-button:hover {
     fill: #f5f7f6;
 }

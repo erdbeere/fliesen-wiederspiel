@@ -1,20 +1,14 @@
-import {useEffect, useRef} from "react";
+import {useEffect, useRef, useState} from "react";
+import Canvas from "./Canvas.tsx";
 
-function FliesenCanvas({fliesentisch}: { fliesentisch: string[][] }) {
-    const canvasRef = useRef<HTMLCanvasElement>(null)
-
-    useEffect(() => {
-        const canvas = canvasRef.current
-        if (canvas === null) {
-            return;
-        }
-        const context = canvas.getContext('2d')
-        if (context === null) {
-            return;
-        }
-        canvas.width = fliesentisch.length
-        canvas.height = fliesentisch[0].length
-
+function FliesenCanvas({fliesentisch, zoom, setZoom, offset, setOffset}: {
+    fliesentisch: string[][],
+    zoom: number,
+    setZoom: (zoom: number) => number,
+    offset: [number, number],
+    setOffset: (offset: (offset: [number, number]) => [number, number]) => void
+}) {
+    function draw(context: CanvasRenderingContext2D) {
         context.fillStyle = '#ffffff'
         context.fillRect(0, 0, fliesentisch.length, fliesentisch[0].length)
         for (let x = 0; x < fliesentisch.length; x++) {
@@ -23,12 +17,10 @@ function FliesenCanvas({fliesentisch}: { fliesentisch: string[][] }) {
                 context.fillRect(x, y, 1, 1)
             }
         }
-    }, [fliesentisch])
+    }
+    return <Canvas canvasWidth={500} canvasHeight={500} draw={draw} zoom={zoom} setZoom={setZoom}></Canvas>
 
-    return <>
-        <canvas ref={canvasRef}></canvas><br />
-        Dimensions: {fliesentisch.length}x{fliesentisch[0].length}
-    </>
+    // return <canvas ref={canvasRef}></canvas>
 }
 
 export default FliesenCanvas;
