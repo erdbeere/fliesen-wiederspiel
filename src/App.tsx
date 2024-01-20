@@ -6,18 +6,20 @@ import useFliesentischAt from "./FliesenLoader.tsx";
 import {fliesentischSizeMapping, MAX_EVENT_ID, MIN_EVENT_ID} from "./constants.ts";
 
 function App() {
-    const [currentEventID, setCurrentEventID] = useState(1);
-    const [playing, setPlaying] = useState(true);
+    const queryParameters = new URLSearchParams(window.location.search)
+    const [currentEventID, setCurrentEventID] = useState(queryParameters.get("t") ? parseInt(queryParameters.get("t")!) : MIN_EVENT_ID);
+    const [playing, setPlaying] = useState(currentEventID == MIN_EVENT_ID);
 
     const {fliesentisch, date} = useFliesentischAt(currentEventID);
 
     useEffect(() => {
         if (!playing) {
+            history.replaceState(null, "", `?t=${currentEventID}`);
             return;
         }
         const interval = setInterval(() => {
-            setCurrentEventID(currentEventID + 500);
-        }, 500);
+            setCurrentEventID(currentEventID + 50);
+        }, 50);
         return () => clearInterval(interval);
     }, [currentEventID, playing]);
 
@@ -36,12 +38,8 @@ function App() {
                         setPlaying={setPlaying}
                         setValue={setCurrentEventID}/>
                 <div style={{margin: "5em 0"}}></div>
-                <input type="number" value={currentEventID}
-                       onChange={event => setCurrentEventID(parseInt(event.target.value))}/>
-                <p>
-                    Current event: {currentEventID}<br/>
-                    Downloaded until event ID: -
-                </p>
+                {/*<input type="number" value={currentEventID}*/}
+                {/*       onChange={event => setCurrentEventID(parseInt(event.target.value))}/>*/}
 
             </div>
         </>

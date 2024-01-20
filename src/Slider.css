@@ -8,6 +8,10 @@
     margin: 0 1em;
 }
 
+#slider #seekbar:focus {
+    outline: none;
+}
+
 #slider .label {
     width: 5em;
 }

@@ -90,8 +90,11 @@ function Slider({min, max, value, markers, label, playing, setPlaying, setValue}
 }) {
     return <div id="slider">
         <ControlBar playing={playing} value={value} setPlaying={setPlaying} setValue={setValue} markers={markers}/>
-        <input id="seekbar" type="range" min={min} max={max} value={value} list="markers"
-               onChange={event => setValue(parseInt(event.target.value))}/>
+        <input id="seekbar" type="range" min={min} max={max} value={value} list="markers" autoFocus={true}
+               onChange={event => {
+                   setValue(parseInt(event.target.value));
+                   setPlaying(false);
+               }}/>
         <div className="label">{label}</div>
         <datalist id="markers">
             {markers.map(marker => <option value={marker} key={marker}></option>)}
