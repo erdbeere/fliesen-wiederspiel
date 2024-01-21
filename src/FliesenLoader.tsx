@@ -25,9 +25,9 @@ function copyAndResizeCanvas(canvas: string[][], width: number, height: number):
     return resizedCanvas;
 }
 
-async function fetchTileEvents(file_url: string): Promise<TileEvent[]> {
+async function fetchTileEvents(file_url: string, p: { signal: AbortSignal }): Promise<TileEvent[]> {
     const tile_events: TileEvent[] = []
-    await fetch(file_url).then(response => {
+    await fetch(file_url, p).then(response => {
         const ds = new DecompressionStream('gzip');
         if (response.body === null) {
             throw new Error("Response body is null");
@@ -86,8 +86,8 @@ function useFliesentischAt(eventID: number): { fliesentisch: string[][], date: D
     }
 
     useEffect(() => {
-        let isCancelled = false;
-        fetch(`${baseURL}canvas_snapshots/${fileID}.json.gzip`).then(response => {
+        const controller = new AbortController();
+        fetch(`${baseURL}canvas_snapshots/${fileID}.json.gzip`, {signal: controller.signal}).then(response => {
             const ds = new DecompressionStream('gzip');
             if (response.body === null) {
                 throw new Error("Response body is null");
@@ -97,20 +97,12 @@ function useFliesentischAt(eventID: number): { fliesentisch: string[][], date: D
         }).then(response => response.blob())
             .then(blob => blob.text())
             .then(text => {
-                if (isCancelled) {
-                    return;
-                }
                 setSnapshot(JSON.parse(text));
             });
-        fetchTileEvents(`${baseURL}tile_events/${fileID}.csv.gzip`).then(tile_events => {
-            if (isCancelled) {
-                return;
-            }
+        fetchTileEvents(`${baseURL}tile_events/${fileID}.csv.gzip`, {signal: controller.signal}).then(tile_events => {
             setTileEvents(tile_events);
         });
-        return () => {
-            isCancelled = true
-        }
+        return () => controller.abort();
     }, [fileID]);
 
     useEffect(() => {

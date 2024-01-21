@@ -112,23 +112,16 @@ function FliesenCanvas({fliesentisch, zoom, setZoom, offset, setOffset}: {
             setMoveInProgress(false);
         }
 
-        canvas.addEventListener("mousedown", onMouseDown);
-        canvas.addEventListener("mouseup", onMouseUp);
-        canvas.addEventListener("mousemove", onMouseMove);
-        canvas.addEventListener("touchstart", onTouchStart);
-        canvas.addEventListener("touchmove", onTouchMove);
-        canvas.addEventListener("touchend", onTouchEnd);
+        const controller = new AbortController();
 
-        canvas.addEventListener("wheel", onWheel);
-        return () => {
-            canvas.removeEventListener("wheel", onWheel);
-            canvas.removeEventListener("mousedown", onMouseDown);
-            canvas.removeEventListener("mouseup", onMouseUp);
-            canvas.removeEventListener("mousemove", onMouseMove);
-            canvas.removeEventListener("touchstart", onTouchStart);
-            canvas.removeEventListener("touchmove", onTouchMove);
-            canvas.removeEventListener("touchend", onTouchEnd);
-        };
+        canvas.addEventListener("mousedown", onMouseDown, {signal: controller.signal});
+        canvas.addEventListener("mouseup", onMouseUp, {signal: controller.signal});
+        canvas.addEventListener("mousemove", onMouseMove, {signal: controller.signal});
+        canvas.addEventListener("touchstart", onTouchStart, {signal: controller.signal});
+        canvas.addEventListener("touchmove", onTouchMove, {signal: controller.signal});
+        canvas.addEventListener("touchend", onTouchEnd, {signal: controller.signal});
+        canvas.addEventListener("wheel", onWheel, {signal: controller.signal});
+        return () => controller.abort();
     }, [fliesentisch, zoom, setZoom, offset, setOffset, mousePos, moveInProgress, tempOffset]);
 
 
