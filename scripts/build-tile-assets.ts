@@ -23,8 +23,8 @@ export const fliesentischSizeMapping = [
 
 function cleanOutputDirectory() {
     const directories = [
-        path.join(__dirname, "../src/assets/tile_events"),
-        path.join(__dirname, "../src/assets/canvas_snapshots"),
+        path.join(__dirname, "../public/tile_events"),
+        path.join(__dirname, "../public/canvas_snapshots"),
     ]
     for (const directory of directories) {
         // create directory if it doesn't exist
@@ -61,6 +61,7 @@ function unpackTileHistory() {
 
     const input = fs.createReadStream(path.join(__dirname, "../data/tile_history.csv.xz"));
     let lastGroupId = -1;
+    let currentCSVContent = "";
 
     progressbar.start(MAX_EVENT_ID, 0);
     input.pipe(compressor).pipe(parse({"delimiter": ";"})).on("data", (data: string[]) => {
@@ -78,20 +79,23 @@ function unpackTileHistory() {
 
         if (group != lastGroupId) {
             const json = JSON.stringify(canvas);
-            const output = zlib.gzipSync(json);
-            fs.writeFileSync(path.join(__dirname, `../src/assets/canvas_snapshots/${group}.gzip`), output);
+            const canvasOutput = zlib.gzipSync(json);
+            fs.writeFileSync(path.join(__dirname, `../public/canvas_snapshots/${group}.json.gzip`), canvasOutput);
+
+            const csvOutput = zlib.gzipSync(currentCSVContent);
+            fs.writeFileSync(path.join(__dirname, `../public/tile_events/${group-1}.csv.gzip`), csvOutput);
+
             lastGroupId = group;
+            currentCSVContent = "";
         }
 
-        fs.appendFileSync(path.join(__dirname, `../src/assets/tile_events/${group}.csv`), `${data.join(";")}\n`);
+        currentCSVContent += `${data.join(";")}\n`;
         const mapping = fliesentischSizeMapping[currentMapping];
         if (id > mapping["maxEventId"]) {
             currentMapping++;
             canvas = resizeCanvas(canvas, fliesentischSizeMapping[currentMapping]["width"], fliesentischSizeMapping[currentMapping]["height"]);
         }
         canvas[x][y] = color;
-        // console.log("id: ", id);
-        // console.log("path: ", path.join(__dirname, `../src/assets/tile_events/${group}.csv`));
     }).on("end", () => {
         progressbar.stop();
         console.log("Done!");

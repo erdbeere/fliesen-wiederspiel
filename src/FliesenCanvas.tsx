@@ -66,13 +66,7 @@ function FliesenCanvas({fliesentisch, zoom, setZoom, offset, setOffset}: {
             event.preventDefault();
             const newZoom = Math.round(zoom - event.deltaY / 100);
             setZoom(newZoom);
-            // move the offset to the cursor stays at the same position
-            // const mousePosDelta = [event.clientX, event.clientY];
-            console.log(event)
-            // mousePosDelta[0] = Math.round(mousePosDelta[0] / zoom)
-            // mousePosDelta[1] = Math.round(mousePosDelta[1] / zoom)
-            // setTempOffset([tempOffset[0] + mousePosDelta[0], tempOffset[1] + mousePosDelta[1]]);
-            // setOffset(tempOffset);
+            // TODO: move the offset so we are zooming in on the mouse position
         };
 
         // mouse drag inside canvas should change the offset

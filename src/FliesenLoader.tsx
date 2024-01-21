@@ -25,22 +25,31 @@ function copyAndResizeCanvas(canvas: string[][], width: number, height: number):
 
 async function fetchTileEvents(file_url: string): Promise<TileEvent[]> {
     const tile_events: TileEvent[] = []
-    await fetch(file_url).then(response => response.text()).then(text => {
-        const lines = text.split('\n');
-        for (const line of lines) {
-            const parts = line.split(';');
-            const tile_event = {
-                "id": parseInt(parts[0]),
-                "x": parseInt(parts[1]),
-                "y": parseInt(parts[2]),
-                "color": parts[3],
-                "created": parts[4],
-            };
-            if (!isNaN(tile_event.id)) {
-                tile_events.push(tile_event);
-            }
+    await fetch(file_url).then(response => {
+        const ds = new DecompressionStream('gzip');
+        if (response.body === null) {
+            throw new Error("Response body is null");
         }
-    });
+        const stream = response.body.pipeThrough(ds);
+        return new Response(stream);
+    }).then(response => response.blob())
+        .then(blob => blob.text())
+        .then(text => {
+            const lines = text.split('\n');
+            for (const line of lines) {
+                const parts = line.split(';');
+                const tile_event = {
+                    "id": parseInt(parts[0]),
+                    "x": parseInt(parts[1]),
+                    "y": parseInt(parts[2]),
+                    "color": parts[3],
+                    "created": parts[4],
+                };
+                if (!isNaN(tile_event.id)) {
+                    tile_events.push(tile_event);
+                }
+            }
+        });
     return tile_events;
 }
 
@@ -76,7 +85,7 @@ function useFliesentischAt(eventID: number): { fliesentisch: string[][], date: D
 
     useEffect(() => {
         let isCancelled = false;
-        fetch(`/src/assets/canvas_snapshots/${fileID}.gzip`).then(response => {
+        fetch(`/canvas_snapshots/${fileID}.json.gzip`).then(response => {
             const ds = new DecompressionStream('gzip');
             if (response.body === null) {
                 throw new Error("Response body is null");
@@ -91,7 +100,7 @@ function useFliesentischAt(eventID: number): { fliesentisch: string[][], date: D
                 }
                 setSnapshot(JSON.parse(text));
             });
-        fetchTileEvents(`/src/assets/tile_events/${fileID}.csv`).then(tile_events => {
+        fetchTileEvents(`/tile_events/${fileID}.csv.gzip`).then(tile_events => {
             if (isCancelled) {
                 return;
             }
