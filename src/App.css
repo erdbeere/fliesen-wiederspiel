@@ -2,5 +2,37 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  max-width: 1000px;
 }
 
+.instructions {
+  margin: 2rem 0;
+  font-size: small;
+  color: #888;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0.2em;
+    gap: 0.2em;
+}
+
+svg.control-buttons {
+    fill: #ee4d2e;
+    width: 1.5em;
+    height: 1.5em;
+    cursor: pointer;
+    transition: fill 0.25s;
+}
+
+svg.control-buttons:hover {
+    fill: #f5f7f6;
+}
+
+@media (max-width: 768px) {
+  .desktop.instructions {
+    display: none;
+  }
+}

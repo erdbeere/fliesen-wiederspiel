@@ -1,24 +1,170 @@
 import {useEffect, useRef, useState} from "react";
-import Canvas from "./Canvas.tsx";
+import "./FliesenCanvas.css";
+import {fliesentischSizeMapping} from "./constants.ts";
+
+// import { Touch, Canvas } from 'react-touch-canvas'
+
+const largestFliesentisch = fliesentischSizeMapping[fliesentischSizeMapping.length - 1]
+const width = largestFliesentisch.width;
+const height = largestFliesentisch.height;
 
 function FliesenCanvas({fliesentisch, zoom, setZoom, offset, setOffset}: {
     fliesentisch: string[][],
     zoom: number,
     setZoom: (zoom: number) => number,
     offset: [number, number],
-    setOffset: (offset: (offset: [number, number]) => [number, number]) => void
+    setOffset: (offset: number[]) => void
 }) {
-    function draw(context: CanvasRenderingContext2D) {
-        context.fillStyle = '#ffffff'
-        context.fillRect(0, 0, fliesentisch.length, fliesentisch[0].length)
-        for (let x = 0; x < fliesentisch.length; x++) {
-            for (let y = 0; y < fliesentisch[x].length; y++) {
-                context.fillStyle = `#${fliesentisch[x][y]}`
-                context.fillRect(x, y, 1, 1)
-            }
+    const [mousePos, setMousePos] = useState<[number, number]>([0, 0]);
+    const [moveInProgress, setMoveInProgress] = useState<boolean>(false);
+    const [tempOffset, setTempOffset] = useState<[number, number]>(offset);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        if (!moveInProgress) {
+            setTempOffset(offset);
         }
-    }
-    return <Canvas canvasWidth={500} canvasHeight={500} draw={draw} zoom={zoom} setZoom={setZoom}></Canvas>
+    }, [offset, tempOffset, moveInProgress]);
+
+    useEffect(() => {
+        function draw(ctx: CanvasRenderingContext2D) {
+            ctx.fillStyle = '#000'
+            ctx.fillRect(0, 0, largestFliesentisch.width, largestFliesentisch.height)
+            ctx.fillStyle = '#ffffff'
+            ctx.scale(zoom, zoom)
+            ctx.translate(tempOffset[0], tempOffset[1])
+
+            ctx.fillRect(0, 0, fliesentisch.length, fliesentisch[0].length)
+            for (let x = 0; x < fliesentisch.length; x++) {
+                for (let y = 0; y < fliesentisch[x].length; y++) {
+                    ctx.fillStyle = `#${fliesentisch[x][y]}`
+                    ctx.fillRect(x, y, 1, 1)
+                }
+            }
+            ctx.setTransform(1, 0, 0, 1, 0, 0)
+        }
+
+        if (zoom < 1) {
+            setZoom(1)
+            return;
+        }
+        if (zoom > 100) {
+            setZoom(100)
+            return;
+        }
+
+        const canvas = canvasRef.current;
+        if (!canvas) {
+            return;
+        }
+        const context = canvas.getContext("2d");
+        if (!context) {
+            return;
+        }
+        draw(context);
+
+        // mouse wheel inside canvas should zoom instead of scroll
+        const onWheel = (event: WheelEvent) => {
+            event.preventDefault();
+            const newZoom = Math.round(zoom - event.deltaY / 100);
+            setZoom(newZoom);
+            // move the offset to the cursor stays at the same position
+            // const mousePosDelta = [event.clientX, event.clientY];
+            console.log(event)
+            // mousePosDelta[0] = Math.round(mousePosDelta[0] / zoom)
+            // mousePosDelta[1] = Math.round(mousePosDelta[1] / zoom)
+            // setTempOffset([tempOffset[0] + mousePosDelta[0], tempOffset[1] + mousePosDelta[1]]);
+            // setOffset(tempOffset);
+        };
+
+        // mouse drag inside canvas should change the offset
+        const onMouseDown = (event: MouseEvent) => {
+            setMousePos([event.clientX, event.clientY]);
+            setMoveInProgress(true);
+        };
+
+        const onTouchStart = (event: TouchEvent) => {
+            setMousePos([event.touches[0].clientX, event.touches[0].clientY]);
+            setMoveInProgress(true);
+        }
+
+        const onMouseMove = (event: MouseEvent) => {
+            if (!moveInProgress) {
+                return;
+            }
+            const mousePosDelta = [event.clientX - mousePos[0], event.clientY - mousePos[1]];
+            mousePosDelta[0] = Math.round(mousePosDelta[0] / zoom)
+            mousePosDelta[1] = Math.round(mousePosDelta[1] / zoom)
+            setTempOffset([tempOffset[0] + mousePosDelta[0], tempOffset[1] + mousePosDelta[1]]);
+            setMousePos([event.clientX, event.clientY]);
+        }
+
+        const onTouchMove = (event: TouchEvent) => {
+            if (!moveInProgress) {
+                return;
+            }
+            const mousePosDelta = [event.touches[0].clientX - mousePos[0], event.touches[0].clientY - mousePos[1]];
+            mousePosDelta[0] = Math.round(mousePosDelta[0] / zoom)
+            mousePosDelta[1] = Math.round(mousePosDelta[1] / zoom)
+            setTempOffset([tempOffset[0] + mousePosDelta[0], tempOffset[1] + mousePosDelta[1]]);
+            setMousePos([event.touches[0].clientX, event.touches[0].clientY]);
+        }
+
+        const onMouseUp = () => {
+            setOffset(tempOffset);
+            setMoveInProgress(false);
+        };
+
+        const onTouchEnd = () => {
+            setOffset(tempOffset);
+            setMoveInProgress(false);
+        }
+
+        canvas.addEventListener("mousedown", onMouseDown);
+        canvas.addEventListener("mouseup", onMouseUp);
+        canvas.addEventListener("mousemove", onMouseMove);
+        canvas.addEventListener("touchstart", onTouchStart);
+        canvas.addEventListener("touchmove", onTouchMove);
+        canvas.addEventListener("touchend", onTouchEnd);
+
+        canvas.addEventListener("wheel", onWheel);
+        return () => {
+            canvas.removeEventListener("wheel", onWheel);
+            canvas.removeEventListener("mousedown", onMouseDown);
+            canvas.removeEventListener("mouseup", onMouseUp);
+            canvas.removeEventListener("mousemove", onMouseMove);
+            canvas.removeEventListener("touchstart", onTouchStart);
+            canvas.removeEventListener("touchmove", onTouchMove);
+            canvas.removeEventListener("touchend", onTouchEnd);
+        };
+    }, [fliesentisch, zoom, setZoom, offset, setOffset, mousePos, moveInProgress, tempOffset]);
+
+
+    return <canvas width={width} height={height} id="fliesen-canvas" ref={canvasRef}></canvas>
+
+    // const style = {
+    //     // width: '800px',
+    //     width: '100%',
+    //     border: '1px solid red',
+    //     background: 'white',
+    //     overflow: 'hidden',
+    //     touchAction: 'none',
+    // }
+
+
+    // return <div style={style}>
+    //     <Touch>
+    //       <Canvas
+    //         width={800}
+    //         height={600}
+    //         onAnimationFrame={draw}
+    //         // onAnimationFrame={(ctx, time) => {
+    //         //   ctx.font = '30px Arial'
+    //         //   ctx.fillText(`time: ${Math.round(time)}`, 25, 50)
+    //         // }}
+    //       />
+    //     </Touch>
+    //   </div>
 
     // return <canvas ref={canvasRef}></canvas>
 }

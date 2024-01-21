@@ -1,6 +1,8 @@
 #slider {
     display: flex;
     width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 #slider #seekbar {
@@ -13,25 +15,6 @@
 }
 
 #slider .label {
-    width: 5em;
-}
-
-#slider #controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 0.2em;
-    gap: 0.2em;
-}
-
-svg.player-button {
-    fill: #ee4d2e;
-    width: 1.5em;
-    height: 1.5em;
-    cursor: pointer;
-    transition: fill 0.25s;
-}
-
-svg.player-button:hover {
-    fill: #f5f7f6;
+    width: 10em;
+    padding: 1em;
 }
