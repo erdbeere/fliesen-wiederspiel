@@ -133,9 +133,6 @@ function App() {
                     Mit den Pfeiltasten eine Fliese legen / entfernen.<br/>
                     Mit Strg + Pfeiltasten 100 Fliesen legen / entfernen.<br/>
                 </p>
-                {/*<input type="number" value={currentEventID}*/}
-                {/*       onChange={event => setCurrentEventID(parseInt(event.target.value))}/>*/}
-
             </div>
         </>
     )

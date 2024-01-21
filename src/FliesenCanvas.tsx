@@ -1,8 +1,6 @@
-import {useEffect, useRef, useState} from "react";
+import {Dispatch, SetStateAction, useEffect, useRef, useState} from "react";
 import "./FliesenCanvas.css";
 import {fliesentischSizeMapping} from "./constants.ts";
-
-// import { Touch, Canvas } from 'react-touch-canvas'
 
 const largestFliesentisch = fliesentischSizeMapping[fliesentischSizeMapping.length - 1]
 const width = largestFliesentisch.width;
@@ -11,9 +9,9 @@ const height = largestFliesentisch.height;
 function FliesenCanvas({fliesentisch, zoom, setZoom, offset, setOffset}: {
     fliesentisch: string[][],
     zoom: number,
-    setZoom: (zoom: number) => number,
+    setZoom: Dispatch<SetStateAction<number>>
     offset: [number, number],
-    setOffset: (offset: number[]) => void
+    setOffset: Dispatch<SetStateAction<[number, number]>>,
 }) {
     const [mousePos, setMousePos] = useState<[number, number]>([0, 0]);
     const [moveInProgress, setMoveInProgress] = useState<boolean>(false);
@@ -141,32 +139,6 @@ function FliesenCanvas({fliesentisch, zoom, setZoom, offset, setOffset}: {
 
 
     return <canvas width={width} height={height} id="fliesen-canvas" ref={canvasRef}></canvas>
-
-    // const style = {
-    //     // width: '800px',
-    //     width: '100%',
-    //     border: '1px solid red',
-    //     background: 'white',
-    //     overflow: 'hidden',
-    //     touchAction: 'none',
-    // }
-
-
-    // return <div style={style}>
-    //     <Touch>
-    //       <Canvas
-    //         width={800}
-    //         height={600}
-    //         onAnimationFrame={draw}
-    //         // onAnimationFrame={(ctx, time) => {
-    //         //   ctx.font = '30px Arial'
-    //         //   ctx.fillText(`time: ${Math.round(time)}`, 25, 50)
-    //         // }}
-    //       />
-    //     </Touch>
-    //   </div>
-
-    // return <canvas ref={canvasRef}></canvas>
 }
 
 export default FliesenCanvas;

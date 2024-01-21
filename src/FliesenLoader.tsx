@@ -23,19 +23,7 @@ function copyAndResizeCanvas(canvas: string[][], width: number, height: number):
     return resizedCanvas;
 }
 
-let tileEventCache: { [key: string] : TileEvent} = {}
-
 async function fetchTileEvents(file_url: string): Promise<TileEvent[]> {
-    // if (id < MIN_EVENT_ID || id > MAX_EVENT_ID) {
-    //     // more than 2132410 events do not exist
-    //     console.error(`Invalid event ID ${id} requested.`)
-    //     return [];
-    // }
-    // const file_id = Math.floor(id / EVENTS_PER_FILE);
-    // const file_url = `/src/assets/tile_events/${file_id}.csv`;
-    // if (file_url in tileEventCache) {
-    //     return tileEventCache[file_url];
-    // }
     const tile_events: TileEvent[] = []
     await fetch(file_url).then(response => response.text()).then(text => {
         const lines = text.split('\n');
@@ -68,11 +56,6 @@ function useFliesentischAt(eventID: number): { fliesentisch: string[][], date: D
     const [date, setDate] = useState<Date>(new Date(0));
     const [fileID, setFileID] = useState(0);
     const [desiredDimension, setDesiredDimension] = useState([0, 0]);
-    const [lastEventID, setLastEventID] = useState<number>(-1);
-
-    // const [lastDrawnEventID, setLastDrawnEventID] = useState<number>(-1);
-    // const [lastSnapshotID, setLastSnapshotID] = useState<number>(-1);
-    // const [redrawRequired, setRedrawRequired] = useState<boolean>(true);
 
     useEffect(() => {
         // get the fliesentisch size for the given eventID
@@ -85,16 +68,6 @@ function useFliesentischAt(eventID: number): { fliesentisch: string[][], date: D
             }
         }
     }, [eventID]);
-
-    // useEffect(() => {
-    //     // resize the fliesentisch if necessary
-    //     if (fliesentisch.length === 0 || fliesentisch[0].length === 0 || desiredDimension[0] === 0 || desiredDimension[1] === 0) {
-    //         return;
-    //     }
-    //     if (fliesentisch.length < desiredDimension[0] || fliesentisch[0].length < desiredDimension[1]) {
-    //         setFliesentisch(resizeCanvas(fliesentisch, desiredDimension[0], desiredDimension[1]));
-    //     }
-    // }, [desiredDimension, fliesentisch]);
 
     const newFileID = Math.floor(eventID / EVENTS_PER_FILE);
     if (newFileID !== fileID) {
@@ -144,111 +117,8 @@ function useFliesentischAt(eventID: number): { fliesentisch: string[][], date: D
         }
         setDate(lastDate);
         setFliesentisch(newFliesentisch);
-        setLastEventID(eventID);
     }, [eventID, tileEvents, snapshot, desiredDimension]);
 
-    // useEffect(() => {
-    //     let isCancelled = false;
-    //     fetchTileEvents(`/src/assets/tile_events/${fileID}.csv`).then(tile_events => {
-    //         let lastDate = new Date(0);
-    //         // const newFliesentisch = [...fliesentisch];
-    //         // for (const tile_event of tile_events) {
-    //         //     if (tile_event.id > eventID || isCancelled) {
-    //         //         break;
-    //         //     }
-    //         //     // newFliesentisch[tile_event.x][tile_event.y] = tile_event.color;
-    //         //     // events.push(tile_event);
-    //         //     lastDate = new Date(tile_event.created);
-    //         // }
-    //         if (isCancelled) {
-    //             return;
-    //         }
-    //         setDate(lastDate);
-    //         // setFliesentisch(fliesentisch => {
-    //         //     const newTisch = [...fliesentisch];
-    //         //     for (const tile_event of events) {
-    //         //         newTisch[tile_event.x][tile_event.y] = tile_event.color;
-    //         //     }
-    //         //     return newTisch;
-    //         // });
-    //     });
-    //     return () => {
-    //         isCancelled = true
-    //     }
-    // }, [eventID]);
-
-    // let newFliesentisch = [...fliesentisch]
-    //
-    // useEffect(() => {
-    //     let isCancelled = false;
-    //     const file_id = Math.floor(eventID / EVENTS_PER_FILE);
-    //     if (lastSnapshotID !== file_id) {
-    //         setRedrawRequired(true);
-    //         setLastSnapshotID(file_id);
-    //     }
-    //     if (lastDrawnEventID > eventID) {
-    //         setRedrawRequired(true);
-    //     }
-    // }, [eventID]);
-    //
-    // useEffect(() => {
-    //     function fetchAndDrawSnapshot() {
-    //         return fetch(`/src/assets/canvas_snapshots/${file_id}.gzip`).then(response => {
-    //             const ds = new DecompressionStream('gzip');
-    //             if (response.body === null) {
-    //                 throw new Error("Response body is null");
-    //             }
-    //             const stream = response.body.pipeThrough(ds);
-    //             return new Response(stream);
-    //         }).then(response => response.blob())
-    //             .then(blob => blob.text())
-    //             .then(text => {
-    //                 newFliesentisch = JSON.parse(text);
-    //                 if (newFliesentisch.length !== desiredDimension[0] || newFliesentisch[0].length !== desiredDimension[1]) {
-    //                     newFliesentisch = resizeCanvas(newFliesentisch, desiredDimension[0], desiredDimension[1]);
-    //                 }
-    //                 // if (isCancelled) {
-    //                 //     return;
-    //                 // }
-    //                 setRedrawRequired(false);
-    //             });
-    //     }
-    //
-    //     function fetchAndDrawEvents() {
-    //         return fetchTileEvents(`/src/assets/tile_events/${file_id}.csv`).then(tile_events => {
-    //             let lastDate = new Date(0);
-    //             for (const tile_event of tile_events) {
-    //                 if (tile_event.id > eventID || isCancelled || tile_event.x >= newFliesentisch.length || tile_event.y >= newFliesentisch[0].length) {
-    //                     break;
-    //                 }
-    //                 newFliesentisch[tile_event.x][tile_event.y] = tile_event.color;
-    //                 lastDate = new Date(tile_event.created);
-    //             }
-    //             if (isCancelled) {
-    //                 return;
-    //             }
-    //             setDate(lastDate);
-    //             setRedrawRequired(false);
-    //         });
-    //     }
-    //
-    //     // fetchAndDrawSnapshot().then(() => setFliesentisch(newFliesentisch));
-    //
-    //     if (redrawRequired) {
-    //         fetchAndDrawSnapshot().then(fetchAndDrawEvents).then(() => {
-    //             setLastDrawnEventID(eventID);
-    //             setFliesentisch(newFliesentisch)
-    //         });
-    //     } else {
-    //         fetchAndDrawEvents().then(() => {
-    //             setLastDrawnEventID(eventID);
-    //             setFliesentisch(newFliesentisch)
-    //         });
-    //     }
-    //     return () => {
-    //         // isCancelled = true
-    //     };
-    // }, [redrawRequired]);
     return {fliesentisch, date};
 }
 
