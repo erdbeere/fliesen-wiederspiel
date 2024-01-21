@@ -2,6 +2,8 @@ import {useEffect, useState} from "react";
 import {EVENTS_PER_FILE, fliesentischSizeMapping, MAX_EVENT_ID, MIN_EVENT_ID} from "./constants.ts";
 
 
+const baseURL = import.meta.env.BASE_URL;
+
 type TileEvent = {
     id: number,
     x: number,
@@ -85,7 +87,7 @@ function useFliesentischAt(eventID: number): { fliesentisch: string[][], date: D
 
     useEffect(() => {
         let isCancelled = false;
-        fetch(`/canvas_snapshots/${fileID}.json.gzip`).then(response => {
+        fetch(`${baseURL}canvas_snapshots/${fileID}.json.gzip`).then(response => {
             const ds = new DecompressionStream('gzip');
             if (response.body === null) {
                 throw new Error("Response body is null");
@@ -100,7 +102,7 @@ function useFliesentischAt(eventID: number): { fliesentisch: string[][], date: D
                 }
                 setSnapshot(JSON.parse(text));
             });
-        fetchTileEvents(`/tile_events/${fileID}.csv.gzip`).then(tile_events => {
+        fetchTileEvents(`${baseURL}tile_events/${fileID}.csv.gzip`).then(tile_events => {
             if (isCancelled) {
                 return;
             }
