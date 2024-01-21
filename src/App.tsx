@@ -92,8 +92,8 @@ function App() {
             return;
         }
         const interval = setInterval(() => {
-            setCurrentEventID(currentEventID + 50);
-        }, 50);
+            setCurrentEventID(currentEventID + 150);
+        }, 150);
         return () => clearInterval(interval);
     }, [currentEventID, playing]);
 
